@@ -2,16 +2,20 @@ package spring.io.state.managment.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import spring.io.state.managment.model.Server;
 import spring.io.state.managment.model.Status;
 import spring.io.state.managment.repository.ServerRepository;
 
 import java.io.IOException;
-import java.net.Inet4Address;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.util.Collection;
+import java.util.Random;
 
 @Service
 @RequiredArgsConstructor
@@ -30,7 +34,8 @@ public class ServerServiceImpl implements ServerService{
     }
 
     private String setServerImageUrl() {
-        return "https://www.google.com";
+        String [] imageNames = {"server1.png", "server2.png", "server3.png", "server4.png"};
+        return ServletUriComponentsBuilder.fromCurrentContextPath().path("/server/image/" + imageNames[new Random().nextInt(4)]).toUriString();
     }
 
     @Override
@@ -45,21 +50,37 @@ public class ServerServiceImpl implements ServerService{
 
     @Override
     public Collection<Server> list(int limit) {
-        return null;
+        log.info("Fetching all servers");
+        return serverRepository.findAll(PageRequest.of(0, limit)).toList();
     }
 
     @Override
     public Server get(Long id) {
-        return null;
+        log.info("Fetching server by id: {}", id);
+        return serverRepository.findById(id).get();
     }
 
     @Override
     public Server update(Server server) {
-        return null;
+        log.info("Updating server: {}", server.getName());
+        return serverRepository.save(server);
     }
 
     @Override
     public Boolean delete(Long id) {
-        return null;
+        log.info("Deleting server by id: {}", id);
+        serverRepository.deleteById(id);
+        return Boolean.TRUE;
+    }
+
+    private boolean isReachable(String ipAddress, int port, int timeOut) {
+        try {
+            try(Socket socket = new Socket()) {
+                socket.connect(new InetSocketAddress(ipAddress, port), timeOut);
+            }
+            return true;
+        }catch (IOException exception){
+            return false;
+        }
     }
 }
